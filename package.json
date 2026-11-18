@@ -1,0 +1,39 @@
+{
+  "name": "athflex-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "seed": "node scripts/seed.mjs",
+    "seed:admin": "node scripts/seed-admin.mjs",
+    "migrate:access": "node scripts/migrate-access.mjs",
+    "migrate:techpacks": "node scripts/migrate-techpacks.mjs",
+    "migrate:materials": "node scripts/migrate-materials.mjs",
+    "migrate:production": "node scripts/migrate-production.mjs",
+    "test:storage": "node --test scripts/tests/file-storage.test.mjs",
+    "test": "node --test scripts/tests/file-storage.test.mjs scripts/tests/core.test.mjs scripts/tests/variant-lookups.test.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "next": "16.4.4",
+    "pg": "^8.23.0",
+    "qrcode": "^1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

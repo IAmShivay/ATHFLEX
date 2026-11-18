@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand: #171717;
+  --color-canvas: #f7f7f7;
+  --color-surface: #ffffff;
+  --color-line: #d4d4d4;
+  --color-muted: #737373;
+  --color-danger: #b91c1c;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", monospace;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-canvas);
+  color: #171717;
+}
+
+::selection {
+  background: #262626;
+  color: #fff;
+}
+
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #171717;
+  outline-offset: 3px;
+}
+
+html {
+  scroll-padding-top: 150px;
+  scroll-padding-bottom: 140px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+:where(button, summary, select, input[type="checkbox"]):not(:disabled) {
+  cursor: pointer;
+}
+
+input, select, textarea {
+  accent-color: #171717;
+}
+
+input:not([type="checkbox"]):not([type="hidden"]), select {
+  min-height: 40px;
+}
+
+textarea { resize: vertical; }
+
+:where(input, select, textarea)[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+:where(input, select, textarea)[aria-invalid="true"]:focus-visible {
+  outline-color: var(--color-danger);
+}
+
+thead { border-bottom: 1px solid var(--color-line); }
+
+section[id^="pack-"]:target { border-color: #171717; }
+
+th {
+  font-weight: 500;
+}
+
+td {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
