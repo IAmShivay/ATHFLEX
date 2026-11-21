@@ -16,7 +16,7 @@ export type Techpack = {
   description: string | null; d2c_exclusive: boolean; neck_type: string | null;
   size_type: string | null; collection_type: string | null; remarks: string | null;
   pp_status: "pending" | "approved" | "rejected"; pp_notes: string | null;
-  pp_decided_at: string | null; pp_decided_by: number | null;
+  pp_decided_at: string | null; pp_decided_by: number | null; pp_rework_count: number;
 };
 
 export type ErpSku = {

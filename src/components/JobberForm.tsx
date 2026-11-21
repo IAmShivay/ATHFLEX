@@ -11,7 +11,7 @@ const label = "mb-1 block text-sm font-medium";
 
 export function JobberForm({ jobber }: { jobber?: Jobber }) {
   const [state, action, pending] = useActionState<ProductionState, FormData>(saveJobber, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   const id = jobber ? `jobber-${jobber.id}` : "new-jobber";
   return (
     <form action={action} {...formProps} className="space-y-3">

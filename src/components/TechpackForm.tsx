@@ -22,7 +22,7 @@ export function TechpackForm({ people, existing }: { people: PersonOption[]; exi
   const [localError, setLocalError] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const { errors: validationErrors, formProps, describe, dismiss } = useFormErrors(state.fieldErrors, formRef);
+  const { errors: validationErrors, formProps, describe, dismiss } = useFormErrors(state, formRef);
   const errors = localError ? { ...validationErrors, files: localError } : validationErrors;
   useEffect(() => {
     if (state.error) errorRef.current?.focus();
@@ -49,7 +49,7 @@ export function TechpackForm({ people, existing }: { people: PersonOption[]; exi
     </label>
   );
   return (
-    <form ref={formRef} action={action} {...formProps} className="space-y-5" onReset={() => { setUploadCount(0); setUploadReset((value) => value + 1); }} onSubmit={(event) => {
+    <form ref={formRef} action={action} {...formProps} className="space-y-5" onReset={(event) => { formProps.onReset(event); if (event.defaultPrevented) return; setUploadCount(0); setUploadReset((value) => value + 1); }} onSubmit={(event) => {
       formProps.onSubmit(event);
       setLocalError("");
       const files = Array.from(event.currentTarget.querySelectorAll<HTMLInputElement>('input[type="file"]')).flatMap((input) => Array.from(input.files ?? []));

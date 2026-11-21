@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/dal";
 import { hasPermission } from "@/lib/permissions";
 import { getPurchaseOrder } from "@/lib/production";
-import { PoBadge, PpBadge, ProgressBar } from "@/components/ProductionBadges";
+import { PoBadge, PoSourceBadge, PpBadge, ProgressBar } from "@/components/ProductionBadges";
 import { PoStatusActions } from "@/components/PoStatusActions";
 import { DeliveryDateCell } from "@/components/DeliveryDateCell";
 import { num } from "@/lib/format";
@@ -45,8 +45,9 @@ export default async function PurchaseOrderPage({ params }: PageProps<"/purchase
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">{po.po_number}</h1>
             <PoBadge status={po.status} />
+            <PoSourceBadge source={po.source} />
           </div>
-          <p className="mt-1 text-sm text-neutral-500">{po.jobber} · PO date {dateLabel(po.po_date)} · {styleCount} styles · {po.items.length} size lines</p>
+          <p className="mt-1 text-sm text-neutral-500">{po.jobber} · PO date {dateLabel(po.po_date)} · {styleCount} styles · {po.items.length} size lines{po.source_ref ? ` · Source ref ${po.source_ref}` : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {canShowQr && <Link href={`/print/purchase-orders/${po.id}/qr`} className="border border-neutral-950 bg-neutral-950 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-800">QR sheet / print</Link>}

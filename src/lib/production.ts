@@ -1,7 +1,11 @@
 import { query } from "./db";
+import type { PoSource } from "./po-source";
+
+export { DEFAULT_PO_SOURCE, PO_SOURCES, PO_SOURCE_LABELS, type PoSource } from "./po-source";
 
 export type PpStatus = "pending" | "approved" | "rejected";
 export type PoStatus = "draft" | "issued" | "partly_received" | "closed" | "cancelled";
+
 
 export type Jobber = {
   id: number;
@@ -41,6 +45,7 @@ export type PurchaseOrderListRow = {
   id: number;
   po_number: string;
   status: PoStatus;
+  source: PoSource;
   po_date: string;
   jobber: string;
   jobber_id: number;
@@ -75,6 +80,8 @@ export type PurchaseOrderDetail = {
   id: number;
   po_number: string;
   status: PoStatus;
+  source: PoSource;
+  source_ref: string | null;
   po_date: string;
   notes: string | null;
   issued_at: string | null;
@@ -266,7 +273,7 @@ export async function getPurchaseOrders(status?: string): Promise<PurchaseOrderL
   const allowed = ["draft", "issued", "partly_received", "closed", "cancelled"];
   const filtered = status && allowed.includes(status) ? status : null;
   const { rows } = await query<PurchaseOrderListRow>(`
-    SELECT p.id, p.po_number, p.status, to_char(p.po_date, 'YYYY-MM-DD') AS po_date,
+    SELECT p.id, p.po_number, p.status, p.source, to_char(p.po_date, 'YYYY-MM-DD') AS po_date,
            j.name AS jobber, p.jobber_id,
            coalesce(it.styles, 0)::int AS styles,
            coalesce(it.items, 0)::int AS items,
@@ -293,7 +300,7 @@ export async function getPurchaseOrders(status?: string): Promise<PurchaseOrderL
 
 export async function getPurchaseOrder(id: number): Promise<PurchaseOrderDetail | null> {
   const { rows } = await query<Omit<PurchaseOrderDetail, "items">>(`
-    SELECT p.id, p.po_number, p.status, to_char(p.po_date, 'YYYY-MM-DD') AS po_date, p.notes,
+    SELECT p.id, p.po_number, p.status, p.source, p.source_ref, to_char(p.po_date, 'YYYY-MM-DD') AS po_date, p.notes,
            p.issued_at, p.closed_at, p.created_at, p.jobber_id, j.name AS jobber,
            j.contact_name, j.phone, j.email
     FROM fob_pos p JOIN jobbers j ON j.id = p.jobber_id

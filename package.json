@@ -13,6 +13,7 @@
     "migrate:techpacks": "node scripts/migrate-techpacks.mjs",
     "migrate:materials": "node scripts/migrate-materials.mjs",
     "migrate:production": "node scripts/migrate-production.mjs",
+    "migrate:architecture": "node scripts/migrate-architecture.mjs",
     "test:storage": "node --test scripts/tests/file-storage.test.mjs",
     "test": "node --test scripts/tests/file-storage.test.mjs scripts/tests/core.test.mjs scripts/tests/variant-lookups.test.mjs"
   },

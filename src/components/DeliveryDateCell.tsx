@@ -21,7 +21,7 @@ export function DeliveryDateCell({
   editable: boolean;
 }) {
   const [state, action, pending] = useActionState<ProductionState, FormData>(updateItemDeliveryDate, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   const inputId = `delivery-date-${itemId}`;
   const revised = deliveryDate !== originalDeliveryDate;
 
@@ -45,6 +45,7 @@ export function DeliveryDateCell({
           name="delivery_date"
           defaultValue={deliveryDate}
           required
+          aria-label="Delivery date"
           className="min-w-0 flex-1 border border-neutral-300 bg-white px-2 py-1 text-xs outline-none focus:border-neutral-950"
           {...describe("delivery_date", inputId)}
         />

@@ -17,6 +17,99 @@ function moduleAt(path) {
 const sku = moduleAt('src/lib/sku-matrix.ts');
 const auth = moduleAt('src/lib/auth.ts');
 const callback = moduleAt('src/lib/shopify-callback.ts');
+const navigation = moduleAt('src/lib/navigation.ts');
+const workflow = moduleAt('src/lib/workflow.ts');
+
+const allNavItems = () => navigation.NAV_GROUPS.flatMap((group) => group.items);
+const freshStyle = { fabricAssigned: false, trimAssigned: false, skuCount: 0, ppStatus: 'pending', reworkRounds: 0, poCount: 0, issuedPoCount: 0, openPoCount: 0, piecesReceived: 0 };
+
+test('navigation registry has unique modules and every Phase 2 module is reserved, not live', () => {
+  const items = allNavItems();
+  assert.equal(new Set(items.map((item) => item.key)).size, items.length);
+  assert.equal(new Set(items.map((item) => item.href)).size, items.length);
+  const phase2 = navigation.NAV_GROUPS.find((group) => group.phase === 'phase2');
+  assert.equal(JSON.stringify(phase2.items.map((item) => item.key)), JSON.stringify(['ecommerce', 'inventory', 'forecasting', 'product-planning', 'purchase-planning']));
+  for (const item of phase2.items) {
+    assert.equal(item.status, 'planned');
+    assert.ok(item.href.startsWith('/planning/'));
+    assert.ok(item.summary);
+  }
+});
+
+test('navigation only shows modules a user may use, but always reserves Phase 2', () => {
+  const inwardOnly = navigation.visibleGroups(false, (permission) => permission === 'inward');
+  const live = inwardOnly.flatMap((group) => group.items).filter((item) => item.status === 'live').map((item) => item.key);
+  assert.equal(JSON.stringify(live), JSON.stringify(['inward', 'settings']));
+  assert.ok(inwardOnly.some((group) => group.phase === 'phase2'));
+  const admin = navigation.visibleGroups(true, () => true).flatMap((group) => group.items).map((item) => item.key);
+  assert.ok(admin.includes('users'));
+  assert.ok(!navigation.visibleGroups(false, () => true).flatMap((group) => group.items).some((item) => item.key === 'users'));
+});
+
+test('navigation highlights the right module for nested and print routes', () => {
+  const byKey = (key) => allNavItems().find((item) => item.key === key);
+  assert.equal(navigation.isItemActive(byKey('dashboard'), '/'), true);
+  assert.equal(navigation.isItemActive(byKey('dashboard'), '/techpacks'), false);
+  assert.equal(navigation.isItemActive(byKey('fob-pos'), '/purchase-orders/7'), true);
+  assert.equal(navigation.isItemActive(byKey('fob-pos'), '/print/purchase-orders/7/qr'), true);
+  assert.equal(navigation.isItemActive(byKey('techpacks'), '/techpacks-archive'), false);
+});
+
+test('sidebar tabs follow the Phase 1 flow order from the workflow document', () => {
+  const order = allNavItems().map((item) => item.key);
+  const flow = ['techpacks', 'fabric-master', 'trim-master', 'skus', 'pp-approvals', 'fob-pos', 'inward', 'reports'];
+  assert.equal(JSON.stringify(order.filter((key) => flow.includes(key))), JSON.stringify(flow));
+  const steps = flow.map((key) => allNavItems().find((item) => item.key === key).step);
+  assert.equal(JSON.stringify(steps), JSON.stringify(['1', '2', '3', '4', '5', '6', '7–9', '10']));
+  assert.equal(JSON.stringify(navigation.NAV_GROUPS.map((group) => group.key)), JSON.stringify(['overview', 'techpack-sku', 'approval-po', 'qr-inward', 'reports', 'planning', 'administration']));
+});
+
+test('fabric and trim masters highlight independently', () => {
+  const byKey = (key) => allNavItems().find((item) => item.key === key);
+  assert.equal(navigation.isItemActive(byKey('fabric-master'), '/materials/fabric'), true);
+  assert.equal(navigation.isItemActive(byKey('fabric-master'), '/materials/trim'), false);
+  assert.equal(navigation.isItemActive(byKey('trim-master'), '/materials/trim'), true);
+});
+
+test('workflow follows the ten Phase 1 steps in the agreed order', () => {
+  assert.equal(JSON.stringify(workflow.PHASE1_WORKFLOW.map((step) => step.key)), JSON.stringify(['techpack', 'fabric', 'trim', 'sku', 'pp', 'po', 'qr', 'stick', 'inward', 'reports']));
+  assert.equal(workflow.PHASE1_WORKFLOW.find((step) => step.key === 'stick').offline, true);
+});
+
+test('a brand new style is done at step 1 and points to the fabric master next', () => {
+  const states = workflow.styleWorkflowStates(freshStyle);
+  assert.equal(states.techpack, 'done');
+  assert.equal(states.fabric, 'current');
+  assert.equal(states.pp, 'upcoming');
+  assert.equal(states.stick, 'offline');
+});
+
+test('a rejected PP sample shows rework instead of silently blocking the flow', () => {
+  const states = workflow.styleWorkflowStates({ ...freshStyle, fabricAssigned: true, trimAssigned: true, skuCount: 6, ppStatus: 'rejected', reworkRounds: 1 });
+  assert.equal(states.pp, 'rework');
+  assert.equal(states.po, 'upcoming');
+  assert.ok(!Object.values(states).includes('current'));
+});
+
+test('a style moves through PO, QR and inward to reports', () => {
+  const ordered = { ...freshStyle, fabricAssigned: true, trimAssigned: true, skuCount: 6, ppStatus: 'approved', poCount: 1, issuedPoCount: 1, openPoCount: 1 };
+  assert.equal(workflow.styleWorkflowStates(ordered).stick, 'current');
+  const receiving = workflow.styleWorkflowStates({ ...ordered, piecesReceived: 3 });
+  assert.equal(receiving.inward, 'current');
+  assert.equal(receiving.stick, 'done');
+  const finished = workflow.styleWorkflowStates({ ...ordered, piecesReceived: 5, openPoCount: 0 });
+  assert.equal(finished.inward, 'done');
+  assert.equal(finished.reports, 'done');
+});
+
+test('portfolio summaries pluralise counts for the dashboard tracker', () => {
+  const summaries = workflow.portfolioSummaries({ styles: 1, fabricStyles: 0, trimStyles: 1, styledWithSkus: 1, skus: 6, ppPending: 0, ppRework: 1, ppApproved: 0, pos: 2, issuedPos: 1, piecesOrdered: 1, piecesReceived: 0 });
+  assert.equal(summaries.techpack, '1 style');
+  assert.equal(summaries.fabric, '0 of 1 style tagged');
+  assert.equal(summaries.sku, '6 SKUs');
+  assert.equal(summaries.inward, '0 of 1 piece');
+  assert.equal(summaries.pp, '0 approved · 0 pending · 1 rework');
+});
 
 test('SKU matrix generates the agreed color and size format', () => {
   const rows = sku.buildSkuMatrix('af_jg', 'Black, Navy Blue', 'S, M');

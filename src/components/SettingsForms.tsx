@@ -33,7 +33,7 @@ export function StoreInfoForm({
   initial: { store_name: string; store_email: string; currency: string; timezone: string };
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(updateStoreInfo, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   return (
     <form action={action} {...formProps} className="space-y-4">
       <Notice state={state} />
@@ -94,7 +94,7 @@ export function StoreInfoForm({
 
 export function ProfileForm({ initial }: { initial: { name: string; email: string } }) {
   const [state, action, pending] = useActionState<FormState, FormData>(updateProfile, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   return (
     <form action={action} {...formProps} className="space-y-4">
       <Notice state={state} />
@@ -121,7 +121,7 @@ export function ProfileForm({ initial }: { initial: { name: string; email: strin
 
 export function PasswordForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(changePassword, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   return (
     <form action={action} {...formProps} className="space-y-4">
       <Notice state={state} />

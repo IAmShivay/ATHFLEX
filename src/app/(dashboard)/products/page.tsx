@@ -5,9 +5,16 @@ import Link from "next/link";
 import { hasPermission } from "@/lib/permissions";
 import { fetchShopifyProducts } from "@/lib/shopify";
 import { ProductStatusBadge } from "@/components/Badges";
+import { PpBadge } from "@/components/ProductionBadges";
+import type { PpStatus } from "@/lib/production";
 import FilterTabs from "@/components/FilterTabs";
 import SearchInput from "@/components/SearchInput";
 import Pagination from "@/components/Pagination";
+
+type SkuMasterRow = {
+  id: number; sku: string; product_name: string; color: string; size: string; shopify_sku: string | null;
+  techpack_id: number; code: string; pp_status: PpStatus; fabric: string | null; trims: string | null;
+};
 
 export default async function ProductsPage({
   searchParams,
@@ -19,7 +26,13 @@ export default async function ProductsPage({
 
   const [{ products: all, error: shopifyError }, erp] = await Promise.all([
     fetchShopifyProducts(),
-    query<{ id: number; sku: string; product_name: string; color: string; size: string; shopify_sku: string | null }>("SELECT id,sku,product_name,color,size,shopify_sku FROM erp_skus ORDER BY product_name,sku"),
+    query<SkuMasterRow>(`
+      SELECT k.id, k.sku, k.product_name, k.color, k.size, k.shopify_sku, t.id AS techpack_id, t.code, t.pp_status,
+             (SELECT string_agg(m.name, ', ' ORDER BY lower(m.name)) FROM sku_material_tags s JOIN material_tags m ON m.id = s.tag_id WHERE s.sku_id = k.id AND m.kind = 'fabric') AS fabric,
+             (SELECT string_agg(m.name, ', ' ORDER BY lower(m.name)) FROM sku_material_tags s JOIN material_tags m ON m.id = s.tag_id WHERE s.sku_id = k.id AND m.kind = 'trim') AS trims
+      FROM erp_skus k JOIN techpacks t ON t.id = k.techpack_id
+      WHERE ($1 = '' OR k.sku ILIKE '%' || $1 || '%' OR k.product_name ILIKE '%' || $1 || '%' OR k.color ILIKE '%' || $1 || '%' OR t.code ILIKE '%' || $1 || '%')
+      ORDER BY k.product_name, k.sku`, [q]),
   ]);
   const connected = !shopifyError;
 
@@ -48,13 +61,13 @@ export default async function ProductsPage({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-[#1a1a1a]">Products</h1>
+        <div><h1 className="text-xl font-semibold tracking-tight text-[#1a1a1a]">SKU / Product master</h1><p className="mt-1 max-w-2xl text-sm text-[#616161]">The one common list of SKUs. Tech packs, FOB POs and, in Phase 2, planning all use these same records.</p></div>
         <p className="text-sm text-[#616161]">
           {`${erp.rows.length} ERP SKU${erp.rows.length === 1 ? "" : "s"}`}
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-none border border-[#d4d4d4] bg-white shadow-none"><div className="flex items-center justify-between px-4 py-3"><div><h2 className="text-sm font-semibold">ERP product SKUs</h2><p className="mt-0.5 text-xs text-[#737373]">Generated from tech packs · {erp.rows.length} total</p></div>{hasPermission(user, "techpacks") && <Link href="/techpacks" className="text-xs font-medium text-neutral-700 hover:underline">Tech packs →</Link>}</div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-y border-[#eee] bg-[#fafafa] text-xs uppercase tracking-wide text-[#737373]"><tr><th className="px-4 py-2.5">Product</th><th className="px-4 py-2.5">ERP SKU</th><th className="px-4 py-2.5">Color / size</th><th className="px-4 py-2.5">Shopify SKU</th></tr></thead><tbody className="divide-y divide-[#eee]">{erp.rows.map((sku) => <tr key={sku.id}><td className="px-4 py-3 font-medium">{sku.product_name}</td><td className="px-4 py-3">{sku.sku}</td><td className="px-4 py-3">{sku.color} · {sku.size}</td><td className="px-4 py-3 text-[#737373]">{sku.shopify_sku || "—"}</td></tr>)}</tbody></table>{!erp.rows.length && <p className="px-4 py-8 text-center text-sm text-[#737373]">No ERP SKUs yet. Create a tech pack to get started.</p>}</div></div>
+      <div className="overflow-hidden rounded-none border border-[#d4d4d4] bg-white shadow-none"><div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div><h2 className="text-sm font-semibold">ERP SKUs</h2><p className="mt-0.5 text-xs text-[#737373]">Generated from tech packs · {erp.rows.length} {q ? "matching" : "total"}</p></div><div className="flex flex-wrap items-center gap-3"><SearchInput placeholder="Search SKUs, styles, Shopify products" />{hasPermission(user, "techpacks") && <Link href="/techpacks" className="text-xs font-medium text-neutral-700 hover:underline">Tech packs →</Link>}</div></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-y border-[#eee] bg-[#fafafa] text-xs uppercase tracking-wide text-[#737373]"><tr><th className="px-4 py-2.5">ERP SKU</th><th className="px-4 py-2.5">Style</th><th className="px-4 py-2.5">Color / size</th><th className="px-4 py-2.5">PP</th><th className="px-4 py-2.5">Fabric</th><th className="px-4 py-2.5">Trims</th><th className="px-4 py-2.5">Shopify SKU</th></tr></thead><tbody className="divide-y divide-[#eee]">{erp.rows.map((sku) => <tr key={sku.id}><td className="px-4 py-3 font-medium">{sku.sku}</td><td className="px-4 py-3">{hasPermission(user, "techpacks") ? <Link href={`/techpacks/${sku.techpack_id}`} className="hover:underline">{sku.product_name}</Link> : sku.product_name}<span className="block text-xs text-[#737373]">{sku.code}</span></td><td className="px-4 py-3">{sku.color} · {sku.size}</td><td className="px-4 py-3"><PpBadge status={sku.pp_status} /></td><td className="px-4 py-3 text-[#616161]">{sku.fabric || "—"}</td><td className="px-4 py-3 text-[#616161]">{sku.trims || "—"}</td><td className="px-4 py-3 text-[#737373]">{sku.shopify_sku || "—"}</td></tr>)}</tbody></table>{!erp.rows.length && <p className="px-4 py-8 text-center text-sm text-[#737373]">{q ? `No SKUs match “${q}”.` : "No ERP SKUs yet. Create a tech pack to get started."}</p>}</div></div>
 
       {connected && (
         <div className="grid gap-4 sm:grid-cols-3">
@@ -88,7 +101,6 @@ export default async function ProductsPage({
           basePath="/products"
           extraParams={{ q }}
         />
-        <SearchInput placeholder="Search products, type, vendor" />
       </div>
 
       <div className="overflow-hidden rounded-none border border-[#d4d4d4] bg-white shadow-none">

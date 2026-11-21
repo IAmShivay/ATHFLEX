@@ -4,56 +4,35 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import Avatar from "./Avatar";
-import { hasPermission, type AccessUser, type Permission } from "@/lib/permissions";
-import {
-  AnalyticsIcon,
-  FactoryIcon,
-  HomeIcon,
-  LogoutIcon,
-  OrdersIcon,
-  ReportIcon,
-  ScanIcon,
-  SettingsIcon,
-  StoreIcon,
-  TagIcon,
-  CustomersIcon,
-} from "./icons";
+import NavIcon from "./NavIcon";
+import { hasPermission, type AccessUser } from "@/lib/permissions";
+import { isItemActive, visibleGroups, type NavItem } from "@/lib/navigation";
+import { LogoutIcon, StoreIcon } from "./icons";
 
-const NAV: { href: string; label: string; icon: typeof HomeIcon; permission?: Permission; adminOnly?: boolean }[] = [
-  { href: "/", label: "Home", icon: HomeIcon, permission: "dashboard" },
-  { href: "/techpacks", label: "Tech packs", icon: TagIcon, permission: "techpacks" },
-  { href: "/purchase-orders", label: "FOB POs", icon: OrdersIcon, permission: "production" },
-  { href: "/inward", label: "Inward", icon: ScanIcon, permission: "inward" },
-  { href: "/reports", label: "Reports", icon: ReportIcon, permission: "production_reports" },
-  { href: "/jobbers", label: "Jobbers", icon: FactoryIcon, permission: "production" },
-  { href: "/products", label: "Products", icon: TagIcon, permission: "products" },
-  { href: "/analytics", label: "Analytics", icon: AnalyticsIcon, permission: "analytics" },
-  { href: "/users", label: "Users & access", icon: CustomersIcon, adminOnly: true },
-  { href: "/settings", label: "Settings", icon: SettingsIcon },
-];
+const PLANNED_LABEL = "coming soon";
 
-function visibleNav(user: AccessUser) {
-  return NAV.filter((item) => (!item.adminOnly || user.role === "admin") && (!item.permission || hasPermission(user, item.permission)));
+function groupsFor(user: AccessUser) {
+  return visibleGroups(user.role === "admin", (permission) => hasPermission(user, permission));
 }
 
 export function MobileNav({ user }: { user: AccessUser }) {
   const pathname = usePathname();
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const items = groupsFor(user).flatMap((group) => group.items).filter((item) => item.status === "live");
   return (
     <nav aria-label="Main navigation" className="flex gap-1 overflow-x-auto border-b border-[#d4d4d4] bg-white px-3 py-2 lg:hidden">
-      {visibleNav(user).map(({ href, label, icon: Icon }) => {
-        const active = isActive(href);
+      {items.map((item) => {
+        const active = isItemActive(item, pathname);
         return (
           <Link
-            key={href}
-            href={href}
+            key={item.key}
+            href={item.href}
             aria-current={active ? "page" : undefined}
             className={`flex shrink-0 items-center gap-1.5 rounded-none px-3 py-1.5 text-xs font-medium ${
               active ? "bg-[#1a1a1a] text-white" : "bg-[#f7f7f7] text-[#616161]"
             }`}
           >
-            <Icon className="h-4 w-4" />
-            {label}
+            <NavIcon name={item.icon} className="h-4 w-4" />
+            {item.label}
           </Link>
         );
       })}
@@ -61,9 +40,32 @@ export function MobileNav({ user }: { user: AccessUser }) {
   );
 }
 
+function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = isItemActive(item, pathname);
+  const planned = item.status === "planned";
+  const tone = active
+    ? "bg-neutral-950 font-medium text-white"
+    : planned
+      ? "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600"
+      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950";
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      title={planned ? "Coming soon" : undefined}
+      className={`flex items-center gap-2.5 rounded-none px-3 py-2 text-sm transition-colors ${tone}`}
+    >
+      <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {planned && <span className="sr-only">({PLANNED_LABEL})</span>}
+      {item.step && <span aria-label={`Workflow step ${item.step}`} className={`shrink-0 text-[10px] font-semibold tabular-nums ${active ? "text-neutral-300" : "text-neutral-400"}`}>{item.step}</span>}
+    </Link>
+  );
+}
+
 export default function Sidebar({ user, storeName }: { user: AccessUser & { name: string; email: string }; storeName: string }) {
   const pathname = usePathname();
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const groups = groupsFor(user);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-neutral-200 bg-white text-neutral-900 lg:flex">
@@ -77,23 +79,20 @@ export default function Sidebar({ user, storeName }: { user: AccessUser & { name
         </div>
       </div>
 
-      <nav aria-label="Main navigation" className="mt-2 flex-1 space-y-1 overflow-y-auto px-3">
-        {visibleNav(user).map(({ href, label, icon: Icon }) => {
-          const active = isActive(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-none px-3 py-2 text-sm transition-colors ${
-                active ? "bg-neutral-950 font-medium text-white" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          );
-        })}
+      <nav aria-label="Main navigation" className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
+        {groups.map((group) => (
+          <div key={group.key}>
+            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+              {group.label}
+              {group.note && <span className="mt-0.5 block font-medium normal-case tracking-normal text-neutral-400">{group.note}</span>}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <SidebarLink key={item.key} item={item} pathname={pathname} />
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="border-t border-neutral-200 p-4">

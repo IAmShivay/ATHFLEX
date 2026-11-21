@@ -12,7 +12,7 @@ export function ScanPieceForm() {
   const [state, action, pending] = useActionState<ProductionState, FormData>(scanPiece, {});
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors, formRef);
+  const { errors, formProps, describe } = useFormErrors(state, formRef);
 
   useEffect(() => {
     if (state.scan) {
@@ -25,7 +25,7 @@ export function ScanPieceForm() {
     <section className="border border-neutral-950 bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">FOB inward</h1>
+          <h1 className="text-xl font-semibold tracking-tight">QR &amp; Inward</h1>
           <p className="mt-1 text-sm text-neutral-500">Scan each piece QR. The piece number, PO, style and size are read from the code.</p>
         </div>
         <Link href="/inward/manual" className="border border-neutral-300 px-3 py-2 text-xs font-medium hover:border-neutral-950">QR missing or damaged? Manual entry →</Link>
