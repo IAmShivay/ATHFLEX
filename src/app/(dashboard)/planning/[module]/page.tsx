@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { NAV_GROUPS } from "@/lib/navigation";
+import { NAV_GROUPS, SHOW_PLANNED_MODULES } from "@/lib/navigation";
 import { PHASE2_WORKFLOW } from "@/lib/workflow";
 
 const PLANNING_GROUP_KEY = "planning";
 const PO_CREATION_STEP = "po-creation";
 
 export default async function PlanningModulePage({ params }: PageProps<"/planning/[module]">) {
+  if (!SHOW_PLANNED_MODULES) notFound();
   const { module: slug } = await params;
   const group = NAV_GROUPS.find((entry) => entry.key === PLANNING_GROUP_KEY);
   const item = group?.items.find((entry) => entry.href === `/planning/${slug}`);

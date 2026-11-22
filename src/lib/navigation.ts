@@ -19,6 +19,8 @@ export type NavIconKey =
   | "planning"
   | "purchase";
 
+export const SHOW_PLANNED_MODULES = false;
+
 export type ModuleStatus = "live" | "planned";
 export type PhaseKey = "core" | "phase1" | "phase2" | "admin";
 
@@ -32,7 +34,6 @@ export type NavItem = {
   adminOnly?: boolean;
   match?: string[];
   summary?: string;
-  step?: string;
 };
 
 export type NavGroup = {
@@ -52,37 +53,37 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     key: "techpack-sku",
-    label: "Part A · Techpack & SKU",
+    label: "Techpack & SKU",
     phase: "phase1",
     items: [
-      { key: "techpacks", label: "Tech packs", href: "/techpacks", icon: "techpack", status: "live", permission: "techpacks", step: "1" },
-      { key: "fabric-master", label: "Fabric master", href: "/materials/fabric", icon: "materials", status: "live", permission: "techpacks", step: "2" },
-      { key: "trim-master", label: "Trim master", href: "/materials/trim", icon: "materials", status: "live", permission: "techpacks", step: "3" },
-      { key: "skus", label: "SKU / Product master", href: "/products", icon: "sku", status: "live", permission: "products", step: "4" },
+      { key: "techpacks", label: "Tech packs", href: "/techpacks", icon: "techpack", status: "live", permission: "techpacks" },
+      { key: "fabric-master", label: "Fabric master", href: "/materials/fabric", icon: "materials", status: "live", permission: "techpacks" },
+      { key: "trim-master", label: "Trim master", href: "/materials/trim", icon: "materials", status: "live", permission: "techpacks" },
+      { key: "skus", label: "SKU / Product master", href: "/products", icon: "sku", status: "live", permission: "products" },
       { key: "jobbers", label: "Jobbers", href: "/jobbers", icon: "jobber", status: "live", permission: "production" },
     ],
   },
   {
     key: "approval-po",
-    label: "Part B · PP approval & FOB PO",
+    label: "PP approval & FOB PO",
     phase: "phase1",
     items: [
-      { key: "pp-approvals", label: "PP approval", href: "/pp-approvals", icon: "approval", status: "live", permission: "techpacks", step: "5" },
-      { key: "fob-pos", label: "FOB POs", href: "/purchase-orders", icon: "po", status: "live", permission: "production", step: "6", match: ["/print/purchase-orders"] },
+      { key: "pp-approvals", label: "PP approval", href: "/pp-approvals", icon: "approval", status: "live", permission: "techpacks" },
+      { key: "fob-pos", label: "FOB POs", href: "/purchase-orders", icon: "po", status: "live", permission: "production", match: ["/print/purchase-orders"] },
     ],
   },
   {
     key: "qr-inward",
-    label: "Part C · QR & inward",
+    label: "QR & inward",
     phase: "phase1",
-    items: [{ key: "inward", label: "QR & Inward", href: "/inward", icon: "scan", status: "live", permission: "inward", step: "7–9" }],
+    items: [{ key: "inward", label: "QR & Inward", href: "/inward", icon: "scan", status: "live", permission: "inward" }],
   },
   {
     key: "reports",
-    label: "Part D · What you can check",
+    label: "Insights",
     phase: "phase1",
     items: [
-      { key: "reports", label: "Reports", href: "/reports", icon: "report", status: "live", permission: "production_reports", step: "10" },
+      { key: "reports", label: "Reports", href: "/reports", icon: "report", status: "live", permission: "production_reports" },
       { key: "analytics", label: "Analytics", href: "/analytics", icon: "analytics", status: "live", permission: "analytics" },
     ],
   },
@@ -114,7 +115,7 @@ type AccessCheck = (permission: Permission) => boolean;
 
 export function isItemVisible(item: NavItem, isAdmin: boolean, can: AccessCheck): boolean {
   if (item.adminOnly && !isAdmin) return false;
-  if (item.status === "planned") return true;
+  if (item.status === "planned") return SHOW_PLANNED_MODULES;
   return !item.permission || can(item.permission);
 }
 
