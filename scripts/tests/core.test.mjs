@@ -36,11 +36,12 @@ test('navigation registry has unique modules and every Phase 2 module is reserve
   }
 });
 
-test('navigation only shows modules a user may use, but always reserves Phase 2', () => {
+test('navigation only shows modules a user may use and keeps Phase 2 placeholders off until switched on', () => {
   const inwardOnly = navigation.visibleGroups(false, (permission) => permission === 'inward');
   const live = inwardOnly.flatMap((group) => group.items).filter((item) => item.status === 'live').map((item) => item.key);
   assert.equal(JSON.stringify(live), JSON.stringify(['inward', 'settings']));
-  assert.ok(inwardOnly.some((group) => group.phase === 'phase2'));
+  assert.equal(navigation.SHOW_PLANNED_MODULES, false);
+  assert.ok(!inwardOnly.some((group) => group.phase === 'phase2'));
   const admin = navigation.visibleGroups(true, () => true).flatMap((group) => group.items).map((item) => item.key);
   assert.ok(admin.includes('users'));
   assert.ok(!navigation.visibleGroups(false, () => true).flatMap((group) => group.items).some((item) => item.key === 'users'));
@@ -59,8 +60,6 @@ test('sidebar tabs follow the Phase 1 flow order from the workflow document', ()
   const order = allNavItems().map((item) => item.key);
   const flow = ['techpacks', 'fabric-master', 'trim-master', 'skus', 'pp-approvals', 'fob-pos', 'inward', 'reports'];
   assert.equal(JSON.stringify(order.filter((key) => flow.includes(key))), JSON.stringify(flow));
-  const steps = flow.map((key) => allNavItems().find((item) => item.key === key).step);
-  assert.equal(JSON.stringify(steps), JSON.stringify(['1', '2', '3', '4', '5', '6', '7–9', '10']));
   assert.equal(JSON.stringify(navigation.NAV_GROUPS.map((group) => group.key)), JSON.stringify(['overview', 'techpack-sku', 'approval-po', 'qr-inward', 'reports', 'planning', 'administration']));
 });
 

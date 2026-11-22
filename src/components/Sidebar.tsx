@@ -58,7 +58,6 @@ function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
       <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {planned && <span className="sr-only">({PLANNED_LABEL})</span>}
-      {item.step && <span aria-label={`Workflow step ${item.step}`} className={`shrink-0 text-[10px] font-semibold tabular-nums ${active ? "text-neutral-300" : "text-neutral-400"}`}>{item.step}</span>}
     </Link>
   );
 }

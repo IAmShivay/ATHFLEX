@@ -39,13 +39,13 @@ The navigation is driven by one registry, `src/lib/navigation.ts`. Each module i
 **Phase 1: product development and manufacturing execution (live)**
 
 - Dashboard with the workflow tracker
-- Sidebar tabs follow the Phase 1 flow: Part A Tech packs (1), Fabric master (2), Trim master (3), SKU / Product master (4) and Jobbers; Part B PP approval (5) and FOB POs (6); Part C QR & Inward (7–9); Part D Reports (10) and Analytics
+- Sidebar tabs follow the Phase 1 flow order: Tech packs, Fabric master, Trim master, SKU / Product master, Jobbers, PP approval, FOB POs, QR & Inward, Reports and Analytics
 
 The workflow is Techpack → Fabric master → Trim master → SKU generation → PP approval → FOB PO → QR generation → jobber prints and sticks the QR → scan inward → reports. A rejected PP sample goes to rework and is resubmitted for a new decision (`pp_rework_count` records each round). The tracker on the dashboard and on every tech pack is defined in `src/lib/workflow.ts`.
 
 **Phase 2: demand planning and inventory (reserved)**
 
-E-commerce integration, Inventory management, Demand forecasting, Product planning and Purchase planning appear in the navigation as "Soon" with a landing page each. The intended flow is E-commerce data → Inventory → Demand forecasting → Product planning → Purchase planning → PO creation.
+E-commerce integration, Inventory management, Demand forecasting, Product planning and Purchase planning are defined in the navigation registry as planned modules with a landing page each. They are hidden until `SHOW_PLANNED_MODULES` in `src/lib/navigation.ts` is set to `true`. The intended flow is E-commerce data → Inventory → Demand forecasting → Product planning → Purchase planning → PO creation.
 
 **One shared core.** There is one SKU master (`erp_skus`), one PO system (`fob_pos` and its items and pieces) and one manufacturing execution flow (QR pieces, inward scans, reports). A PO can be raised two ways, recorded in `fob_pos.source`:
 
