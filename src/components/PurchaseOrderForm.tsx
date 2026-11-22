@@ -22,7 +22,7 @@ export function PurchaseOrderForm({
   const [state, action, pending] = useActionState<ProductionState, FormData>(createPurchaseOrder, {});
   const [jobberId, setJobberId] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors, formRef);
+  const { errors, formProps, describe } = useFormErrors(state, formRef);
   const selectedJobber = jobbers.find((jobber) => String(jobber.id) === jobberId);
   const visible = jobberId ? techpacks.filter((pack) => pack.jobber_ids.includes(Number(jobberId))) : [];
 

@@ -21,7 +21,7 @@ const label = "mb-1 block text-sm font-medium text-[#1a1a1a]";
 export default function UserForm({ user }: { user?: ManagedUser }) {
   const [state, action, pending] = useActionState<UserFormState, FormData>(saveUser, {});
   const [role, setRole] = useState(user?.role === "admin" ? "admin" : "staff");
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   const prefix = user ? `user-${user.id}` : "new-user";
   return (
     <form action={action} {...formProps} className="space-y-4">

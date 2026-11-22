@@ -7,8 +7,10 @@ The interface uses a minimal monochrome design: square corners, crisp one-pixel 
 ## Features
 
 - **Auth and access** — email/password login, administrator-managed staff accounts, per-area permissions and session revocation
-- **Home** — tech pack and SKU totals, recent styles, and outstanding setup
-- **Products** — catalog with status tabs, inventory levels, search
+- **Home** — the Phase 1 workflow tracker with live counts, tech pack and SKU totals, recent styles, and outstanding setup
+- **SKU / Product master** — the common SKU list with style, PP status, fabric and trims, plus the Shopify catalog; searchable
+- **Material masters** — shared Fabric and Trim lists with usage counts
+- **PP approval** — queue of samples awaiting approval, in rework, or approved
 - **Tech packs** — style details, size/color ERP SKUs, optional Shopify variant mappings, and protected attachments
 - **Production (Phase 1)** — PP sample gate, jobber master and rates, FOB POs, piece QR sheets, inward scanning with a manual fallback, and production reports
 - **Analytics** — ERP SKU coverage, material assignments, and product mapping progress
@@ -24,10 +26,33 @@ npm run migrate:access             # add user access fields without replacing da
 npm run migrate:techpacks          # add tech pack, SKU, and attachment tables
 npm run migrate:materials          # add reusable materials and storage metadata
 npm run migrate:production         # add PP approval, jobbers, FOB POs, QR pieces, and inward scans
+npm run migrate:architecture       # add PP rework rounds and the PO source (manual or forecast)
 npm run dev
 ```
 
 The demo seed creates `admin@athflex.com` / `admin123`. Change that password in Settings before sharing access. **The seed script truncates existing users, products, customers, orders, and settings; do not run it against data you want to keep.**
+
+## Phases and architecture
+
+The navigation is driven by one registry, `src/lib/navigation.ts`. Each module is `live` or `planned`, belongs to a phase group, and carries its own permission. Adding a Phase 2 module means changing its `status` to `live`, adding its route and a permission; Phase 1 is not rebuilt.
+
+**Phase 1: product development and manufacturing execution (live)**
+
+- Dashboard with the workflow tracker
+- Sidebar tabs follow the Phase 1 flow: Part A Tech packs (1), Fabric master (2), Trim master (3), SKU / Product master (4) and Jobbers; Part B PP approval (5) and FOB POs (6); Part C QR & Inward (7–9); Part D Reports (10) and Analytics
+
+The workflow is Techpack → Fabric master → Trim master → SKU generation → PP approval → FOB PO → QR generation → jobber prints and sticks the QR → scan inward → reports. A rejected PP sample goes to rework and is resubmitted for a new decision (`pp_rework_count` records each round). The tracker on the dashboard and on every tech pack is defined in `src/lib/workflow.ts`.
+
+**Phase 2: demand planning and inventory (reserved)**
+
+E-commerce integration, Inventory management, Demand forecasting, Product planning and Purchase planning appear in the navigation as "Soon" with a landing page each. The intended flow is E-commerce data → Inventory → Demand forecasting → Product planning → Purchase planning → PO creation.
+
+**One shared core.** There is one SKU master (`erp_skus`), one PO system (`fob_pos` and its items and pieces) and one manufacturing execution flow (QR pieces, inward scans, reports). A PO can be raised two ways, recorded in `fob_pos.source`:
+
+- `manual`: created in Phase 1 from the FOB PO screen
+- `forecast`: created by the future Purchase planning module, with `source_ref` pointing at the plan it came from
+
+Both routes feed the same QR sheet, inward scanning and reports, so Phase 2 only has to create POs, not rebuild anything downstream. Run `npm run migrate:architecture` before deploying this version.
 
 ## User access
 

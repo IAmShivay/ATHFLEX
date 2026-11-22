@@ -12,7 +12,7 @@ const inputCls =
 
 export default function LoginForm() {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
 
   return (
     <form action={action} {...formProps} className="space-y-4">

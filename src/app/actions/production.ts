@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { pool } from "@/lib/db";
 import { requirePermission } from "@/lib/dal";
-import { poNumberForSequence, styleSkuLabel } from "@/lib/production";
+import { DEFAULT_PO_SOURCE, poNumberForSequence, styleSkuLabel } from "@/lib/production";
 import type { PpStatus } from "@/lib/production";
 import { fieldError, formFailure, ValidationError, type FormErrorState } from "@/lib/form-errors";
 
 const DUPLICATE_RECORD_MESSAGE = "That record already exists.";
 const GENERIC_FAILURE_MESSAGE = "Could not save the change. Please try again.";
-const INVALID_RECORD_MESSAGE = "Choose a valid record.";
-const INVALID_DATE_MESSAGE = "Enter a valid date.";
+const invalidRecordMessage = (label: string) => `${label}: choose a valid option.`;
+const invalidDateMessage = (label: string) => `${label} must be a valid date.`;
 const SCAN_INPUT_FIELD = { scan: "code", manual: "piece_no" } as const;
 
 export type ProductionState = FormErrorState & {
@@ -29,7 +29,29 @@ export type ProductionState = FormErrorState & {
   };
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  name: "Jobber name",
+  contact_name: "Contact person",
+  phone: "Phone",
+  email: "Email",
+  jobber_id: "Jobber",
+  po_id: "FOB PO",
+  item_id: "Style and size",
+  piece_no: "Piece number",
+  po_date: "PO date",
+  delivery_date: "Delivery date",
+  rate: "Rate",
+  operation_type: "Operation type",
+  code: "Piece QR code",
+  notes: "Notes",
+  note: "Reason / note",
+};
+
 function labelOf(name: string): string {
+  const known = FIELD_LABELS[name];
+  if (known) return known;
+  const deliveryMatch = /^delivery_\d+$/.test(name);
+  if (deliveryMatch) return "Delivery date";
   const text = name.replaceAll("_", " ");
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -50,7 +72,7 @@ function required(form: FormData, name: string, max = 200): string {
 
 function positiveId(form: FormData, name: string): number {
   const value = Number(field(form, name));
-  if (!Number.isSafeInteger(value) || value < 1) throw fieldError(name, INVALID_RECORD_MESSAGE);
+  if (!Number.isSafeInteger(value) || value < 1) throw fieldError(name, invalidRecordMessage(labelOf(name)));
   return value;
 }
 
@@ -58,15 +80,15 @@ function optionalId(form: FormData, name: string): number | null {
   const raw = field(form, name);
   if (!raw) return null;
   const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value < 1) throw fieldError(name, INVALID_RECORD_MESSAGE);
+  if (!Number.isSafeInteger(value) || value < 1) throw fieldError(name, invalidRecordMessage(labelOf(name)));
   return value;
 }
 
 function dateField(form: FormData, name: string): string {
   const value = required(form, name, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw fieldError(name, INVALID_DATE_MESSAGE);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw fieldError(name, invalidDateMessage(labelOf(name)));
   const parsed = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) throw fieldError(name, INVALID_DATE_MESSAGE);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) throw fieldError(name, invalidDateMessage(labelOf(name)));
   return value;
 }
 
@@ -86,6 +108,8 @@ function revalidateProduction(poId?: number) {
   revalidatePath("/inward");
   revalidatePath("/reports");
   revalidatePath("/jobbers");
+  revalidatePath("/pp-approvals");
+  revalidatePath("/products");
   if (poId) revalidatePath(`/purchase-orders/${poId}`);
 }
 
@@ -125,6 +149,7 @@ export async function decidePpSample(_previous: ProductionState, form: FormData)
     }
     revalidateProduction();
     revalidatePath(`/techpacks/${techpackId}`);
+    revalidatePath("/pp-approvals");
     return {
       success:
         decision === "approved"
@@ -133,6 +158,26 @@ export async function decidePpSample(_previous: ProductionState, form: FormData)
             ? "PP sample rejected. The style stays locked until it is approved."
             : "PP status reset to pending.",
     };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function resubmitPpSample(_previous: ProductionState, form: FormData): Promise<ProductionState> {
+  await requirePermission("techpacks_manage");
+  try {
+    const techpackId = positiveId(form, "techpack_id");
+    const result = await pool.query<{ pp_rework_count: number }>(
+      `UPDATE techpacks SET pp_status = 'pending', pp_rework_count = pp_rework_count + 1,
+         pp_submitted_at = now(), updated_at = now()
+       WHERE id = $1 AND pp_status = 'rejected'
+       RETURNING pp_rework_count`, [techpackId]);
+    const updated = result.rows[0];
+    if (!updated) throw new ValidationError("Only a rejected sample can be resubmitted for approval.");
+    revalidateProduction();
+    revalidatePath(`/techpacks/${techpackId}`);
+    revalidatePath("/pp-approvals");
+    return { success: `Sample resubmitted for approval (rework round ${updated.pp_rework_count}).` };
   } catch (error) {
     return failure(error);
   }
@@ -292,8 +337,8 @@ export async function createPurchaseOrder(_previous: ProductionState, form: Form
       const seq = await client.query<{ value: number }>("SELECT nextval('fob_po_number_seq')::int AS value");
       const poNumber = poNumberForSequence(seq.rows[0].value);
       const po = await client.query<{ id: number }>(
-        "INSERT INTO fob_pos (po_number, jobber_id, po_date, notes, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING id",
-        [poNumber, jobberId, poDate, notes || null, actor.id]);
+        "INSERT INTO fob_pos (po_number, jobber_id, po_date, notes, created_by, source) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
+        [poNumber, jobberId, poDate, notes || null, actor.id, DEFAULT_PO_SOURCE]);
       createdId = po.rows[0].id;
 
       const itemRows: {

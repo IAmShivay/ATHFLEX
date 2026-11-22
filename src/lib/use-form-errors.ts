@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type RefObject } from "react";
-import { FIELD_MESSAGES, type FieldErrors } from "@/lib/form-errors";
+import { FIELD_MESSAGES, type FieldErrors, type FormErrorState } from "@/lib/form-errors";
 
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
@@ -9,23 +9,38 @@ function isControl(element: Element): element is Control {
   return element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement;
 }
 
+const IGNORED_LABEL_NODES = "input, select, textarea, option, [role='alert']";
+const LABEL_NOISE = /\*|\(optional\)/gi;
+
+function labelOf(control: Control): string {
+  const label = control.labels?.[0];
+  if (label) {
+    const clone = label.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll(IGNORED_LABEL_NODES).forEach((node) => node.remove());
+    const text = (clone.textContent ?? "").replace(LABEL_NOISE, "").replace(/\s+/g, " ").trim();
+    if (text) return text;
+  }
+  return control.getAttribute("aria-label")?.trim() || FIELD_MESSAGES.fallbackLabel;
+}
+
 function messageFor(control: Control): string {
   const { validity } = control;
-  if (validity.valueMissing) return control instanceof HTMLSelectElement ? FIELD_MESSAGES.select : FIELD_MESSAGES.required;
+  const label = labelOf(control);
+  if (validity.valueMissing) return control instanceof HTMLSelectElement ? FIELD_MESSAGES.select(label) : FIELD_MESSAGES.required(label);
   if (validity.typeMismatch) {
-    if (control.type === "email") return FIELD_MESSAGES.email;
-    if (control.type === "url") return FIELD_MESSAGES.url;
+    if (control.type === "email") return FIELD_MESSAGES.email(label);
+    if (control.type === "url") return FIELD_MESSAGES.url(label);
   }
   if (!(control instanceof HTMLSelectElement)) {
-    if (validity.tooShort) return FIELD_MESSAGES.tooShort(control.minLength);
-    if (validity.tooLong) return FIELD_MESSAGES.tooLong(control.maxLength);
+    if (validity.tooShort) return FIELD_MESSAGES.tooShort(label, control.minLength);
+    if (validity.tooLong) return FIELD_MESSAGES.tooLong(label, control.maxLength);
   }
   if (control instanceof HTMLInputElement) {
-    if (validity.rangeUnderflow) return FIELD_MESSAGES.min(control.min);
-    if (validity.rangeOverflow) return FIELD_MESSAGES.max(control.max);
-    if (validity.stepMismatch) return FIELD_MESSAGES.wholeNumber;
+    if (validity.rangeUnderflow) return FIELD_MESSAGES.min(label, control.min);
+    if (validity.rangeOverflow) return FIELD_MESSAGES.max(label, control.max);
+    if (validity.stepMismatch) return FIELD_MESSAGES.wholeNumber(label);
   }
-  return control.validationMessage || FIELD_MESSAGES.invalid;
+  return FIELD_MESSAGES.invalid(label);
 }
 
 function collectInvalid(form: HTMLFormElement): { errors: FieldErrors; first?: Control } {
@@ -41,7 +56,9 @@ function collectInvalid(form: HTMLFormElement): { errors: FieldErrors; first?: C
 
 type Dismissed = { source?: FieldErrors; names: string[] };
 
-export function useFormErrors(serverErrors?: FieldErrors, formRef?: RefObject<HTMLFormElement | null>) {
+export function useFormErrors(state: FormErrorState, formRef?: RefObject<HTMLFormElement | null>) {
+  const serverErrors = state.fieldErrors;
+  const keepValues = Boolean(state.error) || Boolean(serverErrors && Object.keys(serverErrors).length);
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
   const [dismissed, setDismissed] = useState<Dismissed>({ names: [] });
 
@@ -76,6 +93,9 @@ export function useFormErrors(serverErrors?: FieldErrors, formRef?: RefObject<HT
         event.preventDefault();
         first.focus();
       }
+    },
+    onReset: (event: FormEvent<HTMLFormElement>) => {
+      if (keepValues) event.preventDefault();
     },
     onInput: (event: FormEvent<HTMLFormElement>) => {
       const target = event.target;

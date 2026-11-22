@@ -63,3 +63,25 @@ export async function removeMaterialTag(form: FormData): Promise<MaterialResult>
     return { success: "Assignment removed. The tag remains available for reuse." };
   } catch (error) { console.error("Material removal failed",error); return { error: "Could not remove the assignment." }; }
 }
+
+export type MaterialMasterState = FormErrorState & { success?: string };
+
+export async function saveMaterialMaster(_previous: MaterialMasterState, form: FormData): Promise<MaterialMasterState> {
+  const actor = await requirePermission("techpacks_manage");
+  const kind = String(form.get("kind") ?? "");
+  const name = String(form.get("name") ?? "").trim().replace(/\s+/g, " ");
+  if (kind !== "fabric" && kind !== "trim") return { error: "Choose fabric or trim." };
+  const label = kind === "fabric" ? "Fabric" : "Trim";
+  if (!name) return { fieldErrors: { name: `${label} name is required.` } };
+  if (name.length > 120 || /[\x00-\x1f\x7f]/.test(name)) return { fieldErrors: { name: `${label} name must be 1–120 characters, without control characters.` } };
+  try {
+    const { rows } = await query(`INSERT INTO material_tags(kind,name,created_by) VALUES ($1,$2,$3) ON CONFLICT (kind,lower(name)) DO NOTHING RETURNING id`, [kind, name, actor.id]);
+    if (!rows.length) return { fieldErrors: { name: `${label} “${name}” already exists in the master.` } };
+    revalidatePath("/materials", "layout");
+    revalidatePath("/techpacks", "layout");
+    return { success: `${label} “${name}” added to the master.` };
+  } catch (error) {
+    console.error("Material master creation failed", error);
+    return { error: `Could not add the ${kind}. Please try again.` };
+  }
+}

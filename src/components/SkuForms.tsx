@@ -20,7 +20,7 @@ export function SkuMappingForm({ sku, techpackId }: { sku: ErpSku; techpackId: n
 
 export function AddSkuForm({ techpackId }: { techpackId: number }) {
   const [state, action, pending] = useActionState<TechpackState, FormData>(addSkuCombinations, {});
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   const colorsId = `add-sku-colors-${techpackId}`;
   const sizesId = `add-sku-sizes-${techpackId}`;
   return <form action={action} {...formProps} className="mt-4 rounded-none bg-[#fafafa] p-4"><input type="hidden" name="techpack_id" value={techpackId} /><h3 className="text-sm font-semibold">Add more SKU combinations</h3><p className="mt-1 text-xs text-[#737373]">Enter new colors and sizes as comma-separated lists. Every color is paired with every size.</p><div className="mt-3 flex flex-wrap items-start gap-2"><div className="min-w-40 flex-1"><input id={colorsId} name="colors" required maxLength={1500} placeholder="Colors, e.g. Navy" aria-label="Additional colors" className={`${input} w-full`} {...describe("colors", colorsId)} /><FieldError errors={errors} name="colors" inputId={colorsId} /></div><div className="min-w-40 flex-1"><input id={sizesId} name="sizes" required maxLength={1500} placeholder="Sizes, e.g. S, M, L" aria-label="Additional sizes" className={`${input} w-full`} {...describe("sizes", sizesId)} /><FieldError errors={errors} name="sizes" inputId={sizesId} /></div><button className={button} disabled={pending}>{pending ? "Adding…" : "Add SKUs"}</button></div><Notice state={state} /></form>;

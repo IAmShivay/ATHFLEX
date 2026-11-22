@@ -16,7 +16,7 @@ export function ManualEntryForm({ pos }: { pos: ManualEntryPo[] }) {
   const [itemId, setItemId] = useState("");
   const pieceRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLInputElement>(null);
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   const selectedPo = pos.find((po) => String(po.id) === poId);
   const selectedItem = selectedPo?.items.find((item) => String(item.id) === itemId);
 

@@ -1,3 +1,4 @@
+import { PO_SOURCE_LABELS, type PoSource } from "@/lib/po-source";
 import type { PoStatus, PpStatus } from "@/lib/production";
 
 const BASE = "inline-flex items-center whitespace-nowrap rounded-none px-2 py-0.5 text-xs font-medium ring-1 ring-inset";
@@ -38,6 +39,14 @@ export function EntryTypeBadge({ type }: { type: "scanned" | "manual" }) {
   return (
     <span className={`${BASE} ${type === "manual" ? "bg-neutral-200 text-neutral-800 ring-neutral-300" : "bg-white text-neutral-600 ring-neutral-300"}`}>
       {type === "manual" ? "Manual" : "Scanned"}
+    </span>
+  );
+}
+
+export function PoSourceBadge({ source }: { source: PoSource }) {
+  return (
+    <span className={`${BASE} ${source === "forecast" ? "bg-neutral-950 text-white ring-neutral-950" : "bg-white text-neutral-600 ring-neutral-300"}`}>
+      {PO_SOURCE_LABELS[source]}
     </span>
   );
 }

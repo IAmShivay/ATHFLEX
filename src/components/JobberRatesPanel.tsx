@@ -23,7 +23,7 @@ export function JobberRatesPanel({
   const [state, action, pending] = useActionState<ProductionState, FormData>(assignJobberToTechpack, {});
   const [notice, setNotice] = useState<{ error?: string; success?: string }>({});
   const [removing, startTransition] = useTransition();
-  const { errors, formProps, describe } = useFormErrors(state.fieldErrors);
+  const { errors, formProps, describe } = useFormErrors(state);
   const formId = `techpack-${techpackId}-jobber`;
   const assignedIds = new Set(assignments.map((row) => row.jobber_id));
   const available = jobbers.filter((jobber) => jobber.is_active && !assignedIds.has(jobber.id));

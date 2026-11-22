@@ -177,3 +177,60 @@ export function ChevronIcon({ className = "h-4 w-4" }: IconProps) {
     </svg>
   );
 }
+
+export function LayersIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5" />
+    </svg>
+  );
+}
+
+export function CheckBadgeIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3 4 6v6c0 4.5 3.2 7.8 8 9 4.8-1.2 8-4.5 8-9V6l-8-3Zm-3.5 9 2.5 2.5 4.5-5" />
+    </svg>
+  );
+}
+
+export function BoxesIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h8v8H3V8Zm10 0h8v8h-8V8ZM7 4h10M7 20h10" />
+    </svg>
+  );
+}
+
+export function PlugIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0V8Zm6 9v4" />
+    </svg>
+  );
+}
+
+export function WarehouseIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5 12 4l9 5.5V20H3V9.5ZM8 20v-6h8v6" />
+    </svg>
+  );
+}
+
+export function CompassIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="12" cy="12" r="9" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m15.5 8.5-2 5-5 2 2-5 5-2Z" />
+    </svg>
+  );
+}
+
+export function CartIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h2l2.2 11h10.6L20 7H6.2M9 20h.01M17 20h.01" />
+    </svg>
+  );
+}

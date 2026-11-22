@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/dal";
 import { hasPermission } from "@/lib/permissions";
 import { getPurchaseOrders } from "@/lib/production";
-import { PoBadge, ProgressBar } from "@/components/ProductionBadges";
+import { PoBadge, PoSourceBadge, ProgressBar } from "@/components/ProductionBadges";
 import FilterTabs from "@/components/FilterTabs";
 import { num } from "@/lib/format";
 
@@ -35,7 +35,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PageProps<"/p
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-700">Phase 1 production</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-700">Manufacturing</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">FOB POs</h1>
           <p className="mt-1 text-sm text-neutral-500">Order approved styles, share the piece QR sheet, and track inward receipts.</p>
         </div>
@@ -102,7 +102,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PageProps<"/p
                 <tr key={po.id} className="hover:bg-neutral-50">
                   <td className="px-5 py-4">
                     <Link href={`/purchase-orders/${po.id}`} className="font-semibold hover:underline">{po.po_number}</Link>
-                    <span className="block text-xs text-neutral-500">{po.items} size lines</span>
+                    <span className="mt-1 flex items-center gap-2 text-xs text-neutral-500">{po.items} size lines<PoSourceBadge source={po.source} /></span>
                   </td>
                   <td className="px-5 py-4">{po.jobber}</td>
                   <td className="px-5 py-4 text-neutral-600">{dateLabel(po.po_date)}</td>
