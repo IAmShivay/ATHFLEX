@@ -3,7 +3,7 @@ export const PERMISSIONS = [
   { key: "products", label: "Products", description: "View the product catalog and inventory." },
   { key: "techpacks", label: "Tech packs — view", description: "View tech packs, linked Shopify products and attachments." },
   { key: "techpacks_manage", label: "Tech packs — manage", description: "Create and edit tech packs, SKUs, Shopify mappings and attachments; includes view access." },
-  { key: "pp_approve", label: "PP sample approval", description: "Approve or reject pre-production samples. A style cannot be ordered until its PP sample is approved." },
+  { key: "pp_approve", label: "PP sample approval", description: "Approve or reject pre-production samples. A style cannot be ordered until its PP sample is approved; includes tech pack view access." },
   { key: "production", label: "FOB POs — view", description: "View purchase orders, ordered quantities and piece-level receipts." },
   { key: "production_manage", label: "FOB POs — manage", description: "Create and issue FOB POs, manage jobbers and jobber rates, and close or cancel orders; includes FOB PO view access." },
   { key: "inward", label: "Inward scanning", description: "Scan piece QR codes and record manual inward entries when a QR is missing or damaged." },
@@ -20,7 +20,7 @@ export function hasPermission(user: AccessUser, permission: Permission): boolean
   return (
     user.role === "admin" ||
     user.permissions.includes(permission) ||
-    (permission === "techpacks" && user.permissions.includes("techpacks_manage")) ||
+    (permission === "techpacks" && (user.permissions.includes("techpacks_manage") || user.permissions.includes("pp_approve"))) ||
     (permission === "production" && user.permissions.includes("production_manage"))
   );
 }

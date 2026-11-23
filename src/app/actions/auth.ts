@@ -5,6 +5,7 @@ import { query } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth";
 import { createSession, deleteSession } from "@/lib/session";
 import { hasPermission } from "@/lib/permissions";
+import { landingPath } from "@/lib/navigation";
 
 import { failWithFields, type FieldErrors, type FormErrorState } from "@/lib/form-errors";
 
@@ -31,10 +32,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
       return { fieldErrors: { password: "Invalid email or password." } };
     }
     await createSession(user);
-    if (!hasPermission(user, "dashboard")) {
-      const destinations = [["techpacks", "/techpacks"], ["products", "/products"], ["analytics", "/analytics"], ["shopify", "/settings#shopify"]] as const;
-      destination = destinations.find(([permission]) => hasPermission(user, permission))?.[1] ?? "/settings";
-    }
+    destination = landingPath(user.role === "admin", (permission) => hasPermission(user, permission));
+    if (destination === "/settings" && hasPermission(user, "shopify")) destination = "/settings#shopify";
   } catch (e) {
     console.error("login failed", e);
     return { error: "Could not sign you in. Check that the database is reachable." };

@@ -20,6 +20,7 @@ export type NavIconKey =
   | "purchase";
 
 export const SHOW_PLANNED_MODULES = false;
+const SETTINGS_PATH = "/settings";
 
 export type ModuleStatus = "live" | "planned";
 export type PhaseKey = "core" | "phase1" | "phase2" | "admin";
@@ -126,4 +127,9 @@ export function visibleGroups(isAdmin: boolean, can: AccessCheck): NavGroup[] {
 export function isItemActive(item: NavItem, pathname: string): boolean {
   if (item.href === "/") return pathname === "/";
   return [item.href, ...(item.match ?? [])].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+export function landingPath(isAdmin: boolean, can: AccessCheck): string {
+  const first = visibleGroups(isAdmin, can).flatMap((group) => group.items)[0];
+  return first?.href ?? SETTINGS_PATH;
 }
