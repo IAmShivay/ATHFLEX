@@ -19,6 +19,7 @@ const auth = moduleAt('src/lib/auth.ts');
 const callback = moduleAt('src/lib/shopify-callback.ts');
 const navigation = moduleAt('src/lib/navigation.ts');
 const workflow = moduleAt('src/lib/workflow.ts');
+const permissions = moduleAt('src/lib/permissions.ts');
 
 const allNavItems = () => navigation.NAV_GROUPS.flatMap((group) => group.items);
 const freshStyle = { fabricAssigned: false, trimAssigned: false, skuCount: 0, ppStatus: 'pending', reworkRounds: 0, poCount: 0, issuedPoCount: 0, openPoCount: 0, piecesReceived: 0 };
@@ -149,4 +150,28 @@ test('Shopify callbacks require an authentic signature for the configured shop',
   assert.equal(callback.verifyShopifyCallback(duplicate,'test-secret','example.myshopify.com'), false);
   const missing = signedQuery(); missing.delete('hmac');
   assert.equal(callback.verifyShopifyCallback(missing,'test-secret','example.myshopify.com'), false);
+});
+
+const staff = (...granted) => ({ role: 'staff', permissions: granted });
+const landingFor = (user) => navigation.landingPath(user.role === 'admin', (permission) => permissions.hasPermission(user, permission));
+
+test('a PP approver can open tech packs and the PP queue they were invited to decide on', () => {
+  const approver = staff('pp_approve');
+  assert.equal(permissions.hasPermission(approver, 'techpacks'), true);
+  assert.equal(permissions.hasPermission(approver, 'techpacks_manage'), false);
+  assert.equal(permissions.hasPermission(approver, 'production'), false);
+  const links = navigation.visibleGroups(false, (permission) => permissions.hasPermission(approver, permission)).flatMap((group) => group.items).map((item) => item.key);
+  assert.ok(links.includes('pp-approvals'));
+});
+
+test('an invited user lands on the first module they can use, not an empty settings page', () => {
+  assert.equal(landingFor({ role: 'admin', permissions: [] }), '/');
+  assert.equal(landingFor(staff('dashboard', 'techpacks')), '/');
+  assert.equal(landingFor(staff('techpacks')), '/techpacks');
+  assert.equal(landingFor(staff('pp_approve')), '/techpacks');
+  assert.equal(landingFor(staff('production_manage')), '/jobbers');
+  assert.equal(landingFor(staff('inward')), '/inward');
+  assert.equal(landingFor(staff('production_reports')), '/reports');
+  assert.equal(landingFor(staff('analytics')), '/analytics');
+  assert.equal(landingFor(staff()), '/settings');
 });
